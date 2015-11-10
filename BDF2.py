@@ -2,6 +2,7 @@ from assimulo.explicit_ode import *
 import numpy as N
 import scipy.linalg as SL
 
+#Make a BDF class with input parameter order = 4 to avoid copying
 class BDF_2(Explicit_ODE):
 	"""
 	Explicit Euler.
@@ -24,8 +25,12 @@ class BDF_2(Explicit_ODE):
 				break
 			if i==0:  # initial step
 				t_np1,y_np1 = self.step_EE(t,y)
-			else:	
+			elif i==1:	
 				t_np1, y_np1 = self.step_BDF2([t,t_nm1], [y,y_nm1])
+			elif i==2:
+				#bdf3
+			else: 
+				#bdf4
 			t,t_nm1=t_np1,t
 			y,y_nm1=y_np1,y
 			yield t,y
@@ -47,16 +52,18 @@ class BDF_2(Explicit_ODE):
 		alpha_0*y_np1+alpha_1*y_n+alpha_2*y_nm1=h f(t_np1,y_np1)
 		alpha=[3/2,-2,1/2]
 		"""
-		alpha=[3./2.,-2.,1./2]
+		alpha=[3./2.,-2.,1./2] #Detta borde tas bort senare?
 		f=self.f
 		h=self.h
-		t_n,t_nm1=T
-		y_n,y_nm1=Y
+		t_n,t_nm1=T #SDKit i att packa upp denna
+		y_n,y_nm1=Y #Packa inte upp denna.
 		# predictor
 		t_np1=t_n+h
 		y_np1_i=y_n   # zero order predictor
 		# corrector with fixed point iteration
 		for i in range(self.maxit):
+			#if order = 2
+			#y_np1_ip1=bdf2(T, Y)
 			y_np1_ip1=(-(alpha[1]*y_n+alpha[2]*y_nm1)+h*f(t_np1,y_np1_i))/alpha[0]
 			if SL.norm(y_np1_ip1-y_np1_i) < self.Tol:
 				return t_np1,y_np1_ip1
@@ -64,6 +71,13 @@ class BDF_2(Explicit_ODE):
 		else:
 			raise Explicit_ODE_Exception('Corrector could not converge within % iterations'%i)
 			
+	def bdf2(T, Y):
+		alpha=[3./2.,-2.,1./2]
+		y_n = Y[:,0]
+		y_nm1 = Y
+		return (-(alpha[1]*y_n+alpha[2]*y_nm1)+h*f(t_np1,y_np1_i))/alpha[0]
+		
+	
 #Define the rhs
 def f(t,y):
 	ydot = -y[0]
