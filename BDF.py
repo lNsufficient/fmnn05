@@ -20,7 +20,7 @@ class BDF(Explicit_ODE):
 
         self.jCalc = 1
         if opts["output_list"] == None:
-            raise Explicit_ODE_Exception('BDF-2 is a fixed step-size method. Provide' \
+            raise Explicit_ODE_Exception('BDF is a fixed step-size method. Provide' \
                                          ' the number of communication points.')
         
         self.h = N.diff(opts["output_list"])[0]
@@ -28,15 +28,13 @@ class BDF(Explicit_ODE):
         
         t = N.array([t0])
         y = N.array([y0]).T
-        print(N.shape(y))
         for i in range(self.maxsteps):
-            print('t och y ' , N.shape(t), N.shape(y))
             if t[-1] >= tf:
                 break
-            if i==0:  # initial step
+            if i==0:  
                 t,y = self.step_EE(t,y)
             elif i==1 or self.order==2:   
-                t,y = self.step_BDF(t,y, 2) #tilldelningssatsen behövs förmodligen inte.
+                t,y = self.step_BDF(t,y, 2) 
             elif i==2 or self.order==3:
                 t,y = self.step_BDF(t,y,3)
             else:
@@ -55,12 +53,9 @@ class BDF(Explicit_ODE):
         """
         f = self.problem.rhs
         h = self.h
-        print(N.shape(Y))
         T = N.append(T,T[-1]+h)
-        #append = Y[:,-1].reshape(2,-1)+h*(f(T[-2],Y[:,-1]).reshape(2,-1))
         append = Y[:,-1]+h*(f(T[-2],Y[:,-1])).T
         
-        print('size to append', N.shape(append))
         Y = N.append(Y,append.T, axis=1)
         
         return T, Y
@@ -81,36 +76,14 @@ DF-2 with Fixed Point Iteration and Zero order predictor
             alpha=[25./12.,-4,3,-4./3,1./4.]
         f=self.problem.rhs
         h=self.h
-        # predictor
         T = N.append(T,T[-1]+h)
         appendix = Y[:,-1]
-        print('Size of appendix', N.shape(appendix))
-        print('Size of vector to append to', N.shape(Y))
         
-        #Y = N.append(Y,Y[:,-1].reshape(2,-1), axis=1)
         Y = N.append(Y,N.array([Y[:,-1]]).T, axis=1)
-        
-        # # corrector with fixed point iteration
-        # for i in range(self.maxit):
-            # y_np1_ip1=h*f(T[-1],Y[:,-1])			
-            # for j in range(bdf_order):
-                # print('y_np1_ip1 ',N.shape(y_np1_ip1))
-                # #y_np1_ip1=y_np1_ip1.reshape(2,1) - (alpha[j+1]*Y[:,-j-2]).reshape(2,1)
-                # new = y_np1_ip1 - N.array([N.dot(alpha[j+1],Y[:,-j-2])]).T
-                # #print(y)
-                # y_np1_ip1= new 
-                # print(N.shape(alpha[j+1]*Y[:,-j-2]))
-            # y_np1_ip1=y_np1_ip1/alpha[0]
-            # if SL.norm(y_np1_ip1[:,0]-Y[:,-1]) < self.Tol:
-                # Y[:,-1]=y_np1_ip1[:,0]
-                # return T,Y
-            # print('Shapes ',N.shape(Y[:,-1]), N.shape(y_np1_ip1)) 
-            # Y[:,-1]=y_np1_ip1[:,0]
         if self.jCalc == 1:	
             J = N.eye(N.size(Y[:,-1])) + h/alpha[0]*self.fder(f,T,Y)
         else:
             J = self.J
-        #print("Linneas test", N.array([Y[:,-1]]).T)
         Y[:,-1]=h*f(T[-1],Y[:,-1])[:,0] +Y[:,-1]
         for i in range(self.maxit):
             F = h*f(T[-1], Y[:,-1])[:,0]
@@ -123,9 +96,7 @@ DF-2 with Fixed Point Iteration and Zero order predictor
                 self.jCalc = 0
                 return T, Y
             else:
-                #print("F ", F)
                 dx = SL.solve(J,F)
-                #print("dx ", dx)
                 Y[:,-1] = Y[:,-1] + dx
         else:
             if self.jCalc == 1:
@@ -136,7 +107,6 @@ DF-2 with Fixed Point Iteration and Zero order predictor
                 
     def fder(self,f,T,Y):
         ySize = N.size(Y[:,-1])
-        #print(ySize)
         J = N.zeros((ySize, ySize))
         h = self.h*1e-1
         I = N.eye(ySize)
@@ -144,7 +114,6 @@ DF-2 with Fixed Point Iteration and Zero order predictor
             d = h*I[:,j]
             J[:, j] = (f(T[-1],Y[:,-1]+d)[:,0]-f(T[-1],Y[:,-1]-d)[:,0])/(2*h)
 			
-        #print(J)
         return J
 	
     def print_statistics(self, verbose=NORMAL):
@@ -164,9 +133,7 @@ def rhs(t,y):
 def pend(t,y):
     #g=9.81    l=0.7134354980239037
     gl=13.7503671
-    print(N.size(y))
     result = N.array([[y[1]],[-gl*N.sin(y[0])]])
-    print('result ',N.shape(result))
     return result
 
 #Initial conditions
@@ -180,16 +147,13 @@ pend_mod.name='Nonlinear Pendulum'
 pend_sim = BDF(pend_mod) #Create a BDF solver
 
 #Simulate the problem
-c = 500
+c = 50
 t,y = pend_sim.simulate(1*c, 100*c)
 
 #Plot the result
-print('I slutet', N.shape(y))
 
-print(N.shape(t))
 #P.plot(t,y)
 #P.show()
-print(y)
 plt.plot(y[:,0],y[:,1])
 plt.axis('equal')
 #plt.plot(t,y)

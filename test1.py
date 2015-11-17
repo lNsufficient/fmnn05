@@ -10,18 +10,25 @@ def rhs(t,y):
     result = numpy.array([y[2],y[3],-y[0]*L,-y[1]*L-1])
     return result
 t0 = 0
-y0 = numpy.array([0.8,0.8,0,0])
+y0 = numpy.array([0.8,-0.8,0,0])
 
 model = Explicit_Problem(rhs,y0,t0)
 model.name = 'task1'
 
 sim = CVode(model)
+sim.atol=numpy.array([1,1,1,1])*1e-6
+sim.rtol=1e-6
+sim.maxord=5
+#sim.discr='BDF'
+#sim.iter='Newton'
 
-tfinal = 70
+
+tfinal = 90
 
 (t,y) = sim.simulate(tfinal)
 
 sim.plot()
 
 plt.plot(y[:,0],y[:,1])
+plt.axis('equal')
 plt.show()
