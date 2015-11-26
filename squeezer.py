@@ -136,7 +136,6 @@ def squeezer (t, y, yp):
 	res_3 = g
 	
 	r = hstack((res_1,res_2,res_3))
-	print(numpy.linalg.norm(r))
 	return r
 
 def squeezer2 (t, y, yp):
@@ -251,7 +250,6 @@ def squeezer2 (t, y, yp):
 	res_3 = dot(gp,v)
 	
 	r = hstack((res_1,res_2,res_3))
-	print(numpy.linalg.norm(r))
 	return r
 
 
@@ -339,8 +337,6 @@ def residual(y):
 	g[3] = rr*sibe - d*sibeth + e*cophde - zt*side - ya
 	g[4] = rr*cobe - d*cobeth - zf*coomep - u*siep - xa
 	g[5] = rr*sibe - d*sibeth - zf*siomep + u*coep - ya
-	print(shape(g))
-	print(shape(y))
 	return g
 
 def findInitialValues(x0):
@@ -363,13 +359,30 @@ problem = Implicit_Problem(squeezer, y0, yd0, t0)
 problem.name = 'Skueszer'
 
 sim = IDA(problem)
-print('atol',sim.atol)
-sim.atol = numpy.ones(numpy.size(y0))*1e-3
-sim.rtol = 1e-6 
+#print('atol',sim.atol)
+sim.atol = numpy.ones(numpy.size(y0))*1e-7
 
-tfinal = 10
-ncp = 1
+posIndex = list(range(0,7))
+velocityIndex = list(range(7,14))
+lambdaIndex = list(range(14,20))
 
+algvar = numpy.ones(numpy.size(y0))
+algvar[lambdaIndex] = 0
+algvar[velocityIndex] = 0
+print('algvar: ', algvar)
+
+sim.atol[lambdaIndex] = 1e5
+sim.atol[velocityIndex] = 1e5
+sim.rtol = 1e-8 
+
+tfinal = 0.03*10
+ncp = 5000
+
+sim.algvar = algvar
+sim.suppress_alg = True
 t, y, yd = sim.simulate(tfinal, ncp)
 
-sim.plot()
+print(numpy.shape(y))
+#sim.plot()
+plt.plot(t, y[:,:7])
+plt.show()
