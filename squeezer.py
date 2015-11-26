@@ -375,7 +375,7 @@ sim.atol[lambdaIndex] = 1e5
 sim.atol[velocityIndex] = 1e5
 sim.rtol = 1e-8 
 
-tfinal = 0.03*10
+tfinal = 0.03
 ncp = 5000
 
 sim.algvar = algvar
@@ -384,5 +384,6 @@ t, y, yd = sim.simulate(tfinal, ncp)
 
 print(numpy.shape(y))
 #sim.plot()
-plt.plot(t, y[:,:7])
+pltVector = (y[:,:7]+1*numpy.pi)%(2*numpy.pi)-1*numpy.pi
+plt.plot(t, pltVector, '.')
 plt.show()
