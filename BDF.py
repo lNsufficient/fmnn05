@@ -25,6 +25,7 @@ class BDF(Explicit_ODE):
         
         self.h = N.diff(opts["output_list"])[0]
        
+        print("hhhh: ",self.h)
         
         t = N.array([t0])
         y = N.array([y0]).T
@@ -103,7 +104,7 @@ DF-2 with Fixed Point Iteration and Zero order predictor
                 raise Explicit_ODE_Exception('Corrector could not converge within % iterations'%i)
             else:
                 self.jCalc = 1
-                return step_BDF(T[0:-1],Y[:,:-1], bdf_order)
+                return self.step_BDF(T[0:-1],Y[:,:-1], bdf_order)
                 
     def fder(self,f,T,Y):
         ySize = N.size(Y[:,-1])
@@ -126,7 +127,7 @@ DF-2 with Fixed Point Iteration and Zero order predictor
 
 #TEST EXAMPLE
 def rhs(t,y):
-    k = 10 
+    k = 500 
     L = k*(math.sqrt(y[0]**2+y[1]**2)-1)/math.sqrt(y[0]**2+y[1]**2)
     result = N.array([[y[2],y[3],-y[0]*L,-y[1]*L-1]]).T
     return result
@@ -145,10 +146,12 @@ pend_mod.name='Nonlinear Pendulum'
 
 #Define an explicit solver
 pend_sim = BDF(pend_mod) #Create a BDF solver
+pend_sim.order=4
 
 #Simulate the problem
-c = 50
-t,y = pend_sim.simulate(1*c, 100*c)
+tf = 3
+ratio = 100
+t,y = pend_sim.simulate(tf, ratio*tf)
 
 #Plot the result
 
