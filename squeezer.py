@@ -6,6 +6,7 @@ from assimulo.problem import Implicit_Problem
 from assimulo.solvers import IDA
 import matplotlib.pyplot as plt
 from assimulo.solvers.runge_kutta import RungeKutta4
+from assimulo.problem import Explicit_Problem
 
 
 def init_squeezer():
@@ -28,7 +29,7 @@ def init_squeezer():
 
 
 def squeezer3 (t, y, yp):
-    y, yp, lamb, g, gp, ff, m = defaultSqueezer(t, y, yp)
+    y, yp, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y, yp)
     res_1 = yp[0:7] - y[7:14]
     res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
     res_3 = g
@@ -39,11 +40,21 @@ def squeezer3 (t, y, yp):
     
 
 def squeezer2 (t, y, yp):
-    y, yp, lamb, g, gp, ff, m = defaultSqueezer(t, y, yp)
+    y, yp, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y, yp)
     res_1 = yp[0:7] - y[7:14]
     res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
     v = y[7:14]
     res_3 = dot(gp,v)
+    
+    r = hstack((res_1,res_2,res_3))
+    return r
+
+def squeezer1 (t, y, yp):
+    y, yp, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y, yp)
+    
+    res_1 = yp[0:7] - y[7:14]
+    res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
+    res_3 = dot(gp,yp[7:14]) + gqq
     
     r = hstack((res_1,res_2,res_3))
     return r
@@ -152,8 +163,19 @@ def defaultSqueezer(t, y, yp):
     g[4] = rr*cobe - d*cobeth - zf*coomep - u*siep - xa
     g[5] = rr*sibe - d*sibeth - zf*siomep + u*coep - ya
 
+    #     Index-1 constraint
+    gqq=zeros((6,))
+    v = y[7:14]
+    gqq[0]=-rr*cobe*v[0]**2 + d*cobeth*(v[0]+v[1])**2 + ss*siga*v[2]**2
+    gqq[1]=-rr*sibe*v[0]**2 + d*sibeth*(v[0]+v[1])**2 - ss*coga*v[2]**2
+    gqq[2]=-rr*cobe*v[0]**2 + d*cobeth*(v[0]+v[1])**2 + e*siphde*(v[3]+v[4])**2 + zt*code*v[4]**2
+    gqq[3]=-rr*sibe*v[0]**2 + d*sibeth*(v[0]+v[1])**2 - e*cophde*(v[3]+v[4])**2 + zt*side*v[4]**2 
+    gqq[4]=-rr*cobe*v[0]**2 + d*cobeth*(v[0]+v[1])**2 + zf*coomep*(v[5]+v[6])**2 + u*siep*v[6]**2
+    gqq[5]=-rr*sibe*v[0]**2 + d*sibeth*(v[0]+v[1])**2 + zf*siomep*(v[5]+v[6])**2 - u*coep*v[6]**2
+
+  
     #     Construction of the residual
-    return y, yp, lamb, g, gp, ff, m
+    return y, yp, lamb, g, gp, gqq, ff, m
 
 
 def jacobian(y):
@@ -262,8 +284,8 @@ lambdaIndex = list(range(14,20))
 
 algvar = numpy.ones(numpy.size(y0))
 
-indexNumber = 3 
-#1 - expl runge
+indexNumber = 1 
+#1 - expl runge - index1 solution
 #2 - index2
 #3 - index3
 if indexNumber == 3:
@@ -275,12 +297,15 @@ elif indexNumber == 2:
     algvar[lambdaIndex] = 0
     algvar[velocityIndex] = 1
 elif indexNumber == 1:
-    problem = Explicit_Problem(squeezer1, y0, yd0, t0)
-    problem = RungeKutta4(problem)
+    problem = Explicit_Problem(squeezer1, y0, t0)
     
 problem.name = 'Skueszer'
 
-sim = IDA(problem)
+if indexNumber == 2 or indexNumber == 3:
+    sim = IDA(problem)
+elif indexNumber == 1:
+    sim = RungeKutta4(problem)
+
 #print('atol',sim.atol)
 sim.atol = numpy.ones(numpy.size(y0))*1e-7
 
@@ -294,11 +319,17 @@ ncp = 5000
 
 sim.algvar = algvar
 sim.suppress_alg = True
-t, y, yd = sim.simulate(tfinal, ncp)
+if indexNumber == 2 or indexNumber == 3:
+    t, y, yd = sim.simulate(tfinal, ncp)
+elif indexNumber == 1:
+    t, y, = sim.simulate(tfinal, ncp)
+
 
 print(numpy.shape(y))
 #sim.plot()
 pltVector = (y[:,:7]+1*numpy.pi)%(2*numpy.pi)-1*numpy.pi
-pltVector = y[:,lambdaIndex]
+#pltVector = y[:,lambdaIndex]
+
+pltVector = (y[:,:7])
 plt.plot(t, pltVector, '.')
 plt.show()
