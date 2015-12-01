@@ -368,7 +368,7 @@ lambdaIndex = list(range(14,20))
 
 algvar = numpy.ones(numpy.size(y0))
 algvar[lambdaIndex] = 0
-algvar[velocityIndex] = 0
+algvar[velocityIndex] = 1
 print('algvar: ', algvar)
 
 sim.atol[lambdaIndex] = 1e5
@@ -385,5 +385,6 @@ t, y, yd = sim.simulate(tfinal, ncp)
 print(numpy.shape(y))
 #sim.plot()
 pltVector = (y[:,:7]+1*numpy.pi)%(2*numpy.pi)-1*numpy.pi
+pltVector = y[:,lambdaIndex]
 plt.plot(t, pltVector, '.')
 plt.show()
