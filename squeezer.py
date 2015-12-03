@@ -8,7 +8,7 @@ from assimulo.solvers import IDA
 import matplotlib.pyplot as plt
 from assimulo.solvers.runge_kutta import RungeKutta4
 from assimulo.problem import Explicit_Problem
-
+from assimulo.solvers.runge_kutta import RungeKutta34
 
 def init_squeezer():
     y_1 = array([-0.0617138900142764496358948458001,  #  beta
@@ -55,22 +55,26 @@ def squeezer1 (t, y):
         y, yd0 = init_squeezer()
         return yd0
     y, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y) 
-    #res_1 = yp[0:7] - y[7:14]
-    #res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
-    #res_3 = dot(gp,yp[7:14]) + gqq
+
     yp = zeros(14)
     yp[0:7] = y[7:14]
-    #print("gqq!!!: ", -gqq)
-    gqq = gqq.reshape(6,1)
-    print(shape(gp), shape(gqq) )
-    w = numpy.linalg.solve(gp, -gqq.reshape(6,1))
-    print("======!===!==!=!==!=!")
-    #print("======!===!==!=!==!=!",sl.solve(gp, -gqq))
-    print("yp: ",yp)
-    print("back in squeezer") 
-    #lambdad = fsolve(gp.T,ff[0:7]-dot(m,w))
+
+    
+    Minv = sl.inv(m)
+    
+
+    A = dot(dot(gp,Minv), gp.T)
+    b = gqq + dot(gp,dot(Minv,ff))
+    lambdad = sl.solve(A, b)
+
+    x = dot(gp.T,lambdad)
+    x2 = ff-x
+    w = dot(Minv,x2)
+    #print("x2 ========== ", x2)
+    
     yp[7:14] = w
     #yp[14:20] = zeros(6)
+    #print("yp:===== ",yp)
     return yp
 
 def defaultSqueezer(t, y):
@@ -317,21 +321,23 @@ elif indexNumber == 2:
     algvar[lambdaIndex] = 0
     algvar[velocityIndex] = 1
 elif indexNumber == 1:
-    problem = Explicit_Problem(squeezer1, y0, t0)
+    problem = Explicit_Problem(squeezer1, y0[0:14], t0)
     
 problem.name = 'Skueszer'
 
 if indexNumber == 2 or indexNumber == 3:
     sim = IDA(problem)
+    sim.atol = numpy.ones(numpy.size(y0))*1e-7
+    sim.atol[lambdaIndex] = 1e-5
+    sim.atol[velocityIndex] = 1e-5
+
 elif indexNumber == 1:
-    sim = RungeKutta4(problem)
+    sim = RungeKutta34(problem)
+    sim.atol = numpy.ones(14)*1e-7
+    #sim.atol[velocityIndex] = 1e-5
 
 #print('atol',sim.atol)
-sim.atol = numpy.ones(numpy.size(y0))*1e-7
 
-
-sim.atol[lambdaIndex] = 1e5
-sim.atol[velocityIndex] = 1e5
 sim.rtol = 1e-8 
 
 tfinal = 0.03
@@ -342,14 +348,16 @@ sim.suppress_alg = True
 if indexNumber == 2 or indexNumber == 3:
     t, y, yd = sim.simulate(tfinal, ncp)
 elif indexNumber == 1:
-    t, y, = sim.simulate(tfinal, ncp)
+    t, y, = sim.simulate(0.03, 1000)
+
 
 
 print(numpy.shape(y))
 #sim.plot()
 pltVector = (y[:,:7]+1*numpy.pi)%(2*numpy.pi)-1*numpy.pi
+#print("FINAL Y: ", y)
 #pltVector = y[:,lambdaIndex]
 
-pltVector = (y[:,:7])
+#pltVector = (y[:,:7])
 plt.plot(t, pltVector, '.')
 plt.show()
