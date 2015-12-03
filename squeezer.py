@@ -44,7 +44,7 @@ def squeezer2 (t, y, yp):
     res_1 = yp[0:7] - y[7:14]
     res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
     v = y[7:14]
-    res_3 = dot(gp,v)
+    res_3 = dot(gp,v)revolute
     
     r = hstack((res_1,res_2,res_3))
     return r
@@ -56,8 +56,13 @@ def squeezer1 (t, y, yp):
     res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
     res_3 = dot(gp,yp[7:14]) + gqq
     
-    r = hstack((res_1,res_2,res_3))
-    return r
+    yp[0:7] = y[7:14]
+    w = fsolve(gp, -gqq)
+    lambdad = fsolve(gp.T,ff[0:7]-dot(m,w)
+    yp[7:14] = w
+
+
+    return yp
 
 def defaultSqueezer(t, y, yp):
     """
