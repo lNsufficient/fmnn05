@@ -1,5 +1,6 @@
 from scipy import *
 import scipy.optimize as so
+import scipy.linalg as sl
 import numpy
 import math
 from assimulo.problem import Implicit_Problem
@@ -29,7 +30,7 @@ def init_squeezer():
 
 
 def squeezer3 (t, y, yp):
-    y, yp, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y, yp)
+    y, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y)
     res_1 = yp[0:7] - y[7:14]
     res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
     res_3 = g
@@ -40,37 +41,48 @@ def squeezer3 (t, y, yp):
     
 
 def squeezer2 (t, y, yp):
-    y, yp, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y, yp)
+    y, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y)
     res_1 = yp[0:7] - y[7:14]
     res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
     v = y[7:14]
-    res_3 = dot(gp,v)revolute
+    res_3 = dot(gp,v)
     
     r = hstack((res_1,res_2,res_3))
     return r
 
-def squeezer1 (t, y, yp):
-    y, yp, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y, yp)
-    
-    res_1 = yp[0:7] - y[7:14]
-    res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
-    res_3 = dot(gp,yp[7:14]) + gqq
-    
+def squeezer1 (t, y):
+    if (t == 0):
+        y, yd0 = init_squeezer()
+        return yd0
+    y, lamb, g, gp, gqq, ff, m = defaultSqueezer(t, y) 
+    #res_1 = yp[0:7] - y[7:14]
+    #res_2 = dot(m,yp[7:14])- ff[0:7]+dot(gp.T,lamb)
+    #res_3 = dot(gp,yp[7:14]) + gqq
+    yp = zeros(14)
     yp[0:7] = y[7:14]
-    w = fsolve(gp, -gqq)
-    lambdad = fsolve(gp.T,ff[0:7]-dot(m,w)
+    #print("gqq!!!: ", -gqq)
+    gqq = gqq.reshape(6,1)
+    print(shape(gp), shape(gqq) )
+    w = numpy.linalg.solve(gp, -gqq.reshape(6,1))
+    print("======!===!==!=!==!=!")
+    #print("======!===!==!=!==!=!",sl.solve(gp, -gqq))
+    print("yp: ",yp)
+    print("back in squeezer") 
+    #lambdad = fsolve(gp.T,ff[0:7]-dot(m,w))
     yp[7:14] = w
-
-
+    #yp[14:20] = zeros(6)
     return yp
 
-def defaultSqueezer(t, y, yp):
+def defaultSqueezer(t, y):
     """
     Residual function of the 7-bar mechanism in
     Hairer, Vol. II, p. 533 ff, see also formula (7.11)
     written in residual form
     y,yp vector of dim 20, t scalar
     """
+    
+    print("y: ", y)
+    
     # Inertia data
     m1,m2,m3,m4,m5,m6,m7=.04325,.00365,.02373,.00706,.07050,.00706,.05498
     i1,i2,i3,i4,i5,i6,i7=2.194e-6,4.410e-7,5.255e-6,5.667e-7,1.169e-5,5.667e-7,1.912e-5
@@ -94,6 +106,7 @@ def defaultSqueezer(t, y, yp):
     beta,theta,gamma,phi,delta,omega,epsilon=y[0:7]
     bep,thp,gap,php,dep,omp,epp=y[7:14]
     lamb=y[14:20]
+    print(lamb)
     sibe,sith,siga,siph,side,siom,siep=sin(y[0:7])
     cobe,coth,coga,coph,code,coom,coep=cos(y[0:7])
     
@@ -171,6 +184,7 @@ def defaultSqueezer(t, y, yp):
     #     Index-1 constraint
     gqq=zeros((6,))
     v = y[7:14]
+    #print("v in defaultSq: ", v)
     gqq[0]=-rr*cobe*v[0]**2 + d*cobeth*(v[0]+v[1])**2 + ss*siga*v[2]**2
     gqq[1]=-rr*sibe*v[0]**2 + d*sibeth*(v[0]+v[1])**2 - ss*coga*v[2]**2
     gqq[2]=-rr*cobe*v[0]**2 + d*cobeth*(v[0]+v[1])**2 + e*siphde*(v[3]+v[4])**2 + zt*code*v[4]**2
@@ -178,9 +192,10 @@ def defaultSqueezer(t, y, yp):
     gqq[4]=-rr*cobe*v[0]**2 + d*cobeth*(v[0]+v[1])**2 + zf*coomep*(v[5]+v[6])**2 + u*siep*v[6]**2
     gqq[5]=-rr*sibe*v[0]**2 + d*sibeth*(v[0]+v[1])**2 + zf*siomep*(v[5]+v[6])**2 - u*coep*v[6]**2
 
+    #print("gqq in defaultSq: ", gqq)
   
     #     Construction of the residual
-    return y, yp, lamb, g, gp, gqq, ff, m
+    return y, lamb, g, gp, gqq, ff, m
 
 
 def jacobian(y):
