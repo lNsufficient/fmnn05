@@ -25,8 +25,8 @@ model Squeezer
     phi(start=0, displayUnit="rad"),
     w(start=0),
     a(start=-10666.8329399655854029433719415),
-    n={0,0,-1},
-    animation=false)
+    animation=false,
+    n={0,0,1})
     annotation (Placement(transformation(extent={{92,-16},{112,4}})));
   Modelica.Mechanics.MultiBody.Parts.BodyShape k2(
     r={-0.028,0,0},
@@ -126,9 +126,9 @@ model Squeezer
         rotation=180,
         origin={158,90})));
   Modelica.Mechanics.MultiBody.Joints.Revolute Omega(
-    n={0,0,-1},
+    animation=false,
     phi(displayUnit="rad", start=-0.222668390165885884674473185609),
-    animation=false)
+    n={0,0,-1})
     annotation (Placement(transformation(extent={{-34,-92},{-14,-72}})));
   Modelica.Mechanics.MultiBody.Parts.BodyShape K6(
     r={0,0.02,0},
