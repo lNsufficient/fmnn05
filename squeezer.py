@@ -85,7 +85,7 @@ def defaultSqueezer(t, y):
     y,yp vector of dim 20, t scalar
     """
     
-    print("y: ", y)
+    #print("y: ", y)
     
     # Inertia data
     m1,m2,m3,m4,m5,m6,m7=.04325,.00365,.02373,.00706,.07050,.00706,.05498
@@ -110,7 +110,7 @@ def defaultSqueezer(t, y):
     beta,theta,gamma,phi,delta,omega,epsilon=y[0:7]
     bep,thp,gap,php,dep,omp,epp=y[7:14]
     lamb=y[14:20]
-    print(lamb)
+
     sibe,sith,siga,siph,side,siom,siep=sin(y[0:7])
     cobe,coth,coga,coph,code,coom,coep=cos(y[0:7])
     
@@ -308,7 +308,7 @@ lambdaIndex = list(range(14,20))
 
 algvar = numpy.ones(numpy.size(y0))
 
-indexNumber = 1 
+indexNumber = 2 
 #1 - expl runge - index1 solution
 #2 - index2
 #3 - index3
@@ -355,9 +355,9 @@ elif indexNumber == 1:
 print(numpy.shape(y))
 #sim.plot()
 pltVector = (y[:,:7]+1*numpy.pi)%(2*numpy.pi)-1*numpy.pi
-#print("FINAL Y: ", y)
+print("FINAL Y: ", y)
 #pltVector = y[:,lambdaIndex]
 
-#pltVector = (y[:,:7])
-plt.plot(t, pltVector, '.')
+pltVector = (y[:,:7])
+plt.plot(t, pltVector, '-')
 plt.show()
