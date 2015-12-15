@@ -1,3 +1,7 @@
 *.swp
 *.pyc
 *~
+*.svo
+*.swo
+uppgift3bilder/
+*.pdf
