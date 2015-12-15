@@ -8,12 +8,27 @@ from assimulo.solvers import IDA
 import matplotlib.pyplot as plt
 
 class Woodpecker(Implicit_Problem):
-    def __init__(self, t, y0, yp0, sw):
-        super().__init__(self.motion_state1, y0, yp0, t, sw0=sw)
+    def __init__(self, res, y0, yp0, t, sw):
+        super().__init__(res, y0, yp0, t, sw0=sw)
+        #self.res = self.motion_state1
+        print('init')
         self.variables(y0)
         self.lambda_1_old = y0[6] 
+        self.current_state =1
+        print('end of init')
 
-            
+    def res(self,t,y,yp,sw):
+        print('res')
+        if sw[0]:
+            return motion_state1(t,y,yp)
+        elif sw[1]:
+            return motion_state2(t,y,yp)
+        elif sw[2]:
+            return motion_state3(t,y,yp)
+        else:
+            print('wrong sw in res')
+            return -1               
+   
     def variables(self, y):
         self.m_s = 3.0e-4 # Mass of sleeve [kg]
         self.j_s = 5.0e-9 # Moment of inertia of the sleeve [kgm]
@@ -25,7 +40,7 @@ class Woodpecker(Implicit_Problem):
         self.h_s = 5.8e-3 # 1/2 height of sleeve [m]
         self.l_s = 1.0e-2 # verical distance sleeve origin to spring origin [m]
         self.l_g = 1.5e-2 # vertical distance spring origin to bird origin [m]
-        self.h_b = 2.0e-2 # y coordinate beak (in bird coordinate system) [m]
+        self.h_b = 2.0e-2 # y coordinate beak (in bird coordinate system) [m]           
         self.l_b = 2.01e-2 # -x coordinate beak (in bird coordinate system) [m]
         self.c_p = 5.6e-3 # rotational spring constant [N/rad]
         self.g  = 9.81 #  [m/s^2] 
@@ -36,32 +51,38 @@ class Woodpecker(Implicit_Problem):
 #    v, u_s, u_b = y[3], y[4], y[5]
 #    lambda_1, lambda_2  = y[6], y[7]
 
-    def state_event(self,t, y, yp, sw):
-        print('In state_event') 
+    def state_events(self,t, y, yp, sw):
+        print('In state_event ', sw) 
         phi_b=y[2]
         phi_s=y[1]
+        phip_b=yp[2]
+        phip_s=yp[1]
+        new_state =self.current_state 
+
         lambda_1=y[6]
         tol = 0.00001 
         lambda_1_old = self.lambda_1_old
         
-        if self.current_state == 1: 
-            
+        #if self.current_state == 1: 
+        if sw[0]:   
+            print("in sw = 1")
             if phip_b < 0 and self.h_s*phi_s < -(self.r_s - self.r_0):
                 new_state = 2
             if phip_b > 0 and self.h_s*phi_s > (self.r_s - self.r_0):
                 new_state = 3
 
-        elif self.current_state == 2 and lambda_1_old*lambda_1 < 0:
+        elif sw[1] and lambda_1_old*lambda_1 < 0: #self.current_state 
             new_state = 1
 
-        elif self.current_state == 3:
+       # elif self.current_state == 3:
+        elif sw[2]:
             if phip_b < 0 and lambda_1_old*lambda_1 < tol: #maybe use tol? 
 
                 new_state = 1
             if phip_b > 0 and h_b*phi_b == l_s+l_g-l_b-r_0:
                 new_state = 4
-
-        elif self.current_state == 4:
+        elif sw[3]:
+       # elif self.current_state == 4:
             new_state = 3
           
         self.lambda_1_old = lambda_1 #vi kräver att detta körs varje varv, annars får vi problem
@@ -69,6 +90,7 @@ class Woodpecker(Implicit_Problem):
         new_sw = numpy.zeros(4)        
 
         new_sw[new_state-1] = 1
+        print("at end of state_event")
         return [list(new_sw), 0]
 
     def moi(self,solver):
@@ -95,15 +117,15 @@ class Woodpecker(Implicit_Problem):
         print(solver)
         sw = event_info(0)
 
-        if sw[0]==1:
-            self.res = self.motion_state1
-        elif sw[1]==1:
-            self.res = self.motion_state2
+        if sw[0]:
+            solver.sw=[1,0,0,0]
+        elif sw[1]:
+            solver.sw=[0,1,0,0]
             solver = self.moi(solver)
-        elif sw[2]==1:
-            self.res = self.motion_state3
+        elif sw[2]:
+            solver.sw=[0,0,1,0]
             solver = self.moi(solver)
-        elif sw[3]==1:
+        elif sw[3]:
             #solver.y[4] = -solver.y[4] these are the lines that Claus suggested, we changed them. 
             solver.y[5] = -solver.y[5]
             #solver.yp[1] = -solver.yp[1]
@@ -116,9 +138,9 @@ class Woodpecker(Implicit_Problem):
         
             
 
-    def motion_state1(self,t,y, yp, sw):
-        #print('In state 1 res')
-        self.state_event(t,y,yp,sw)
+    def motion_state1(self,t,y, yp):
+        print('In state 1 res')
+        #self.state_event(t,y,yp,sw)
         lambda_1, lambda_2  = y[6], y[7]
         
         r = self.default_residual(y, yp)
@@ -129,7 +151,7 @@ class Woodpecker(Implicit_Problem):
         r[4] = lambda_2
         
         return r
-    def motion_state2(self, t,y, yp, sw):
+    def motion_state2(self, t,y, yp):
         print('In state 2 res')
         zp, phi_s, phip_s = yp[0], y[1], yp[1]
         lambda_1, lambda_2  = y[6], y[7]
@@ -144,7 +166,7 @@ class Woodpecker(Implicit_Problem):
 
         return r
 
-    def motion_state3(self,t,y,yp, sw):
+    def motion_state3(self,t,y,yp):
         print('In state 3 res')
 
         zp, phi_s, phip_s = yp[0], y[1], yp[1]
@@ -176,12 +198,24 @@ class Woodpecker(Implicit_Problem):
         r[7] = u_b - phip_b
         
         return r
-        
+
+def res(self,t,y,yp,sw):
+    print('res2')
+    if sw[0]:
+        return motion_state1(t,y,yp)
+    elif sw[1]:
+        return motion_state2(t,y,yp)
+    elif sw[2]:
+        return motion_state3(t,y,yp)
+    else:
+        print('wrong sw in res')
+        return -1           
 t0 = 0;
-sw0 = [[1, 0, 0 ,0],0]
+sw0 = [1,0,0,0]
 y0 = numpy.array([5, 0,0, 0, 0, 1,0,0])
 yd0 =  numpy.array([0, 0, 1,-9.82, 1e-12, 0, 0, 0])
-problem = Woodpecker(t0, y0, yd0, sw0)
+problem = Woodpecker(res, y0, yd0, t0, sw0)
+#problem.res=res
 sim = IDA(problem)
 problem.name = 'Woodpecker'
 ncp = 500
