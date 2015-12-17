@@ -17,7 +17,7 @@ class Woodpecker(Implicit_Problem):
         self.current_state =1
         print('end of init')
 
-    def res(self,t,y,yp,sw):
+    def res2(self,t,y,yp,sw):
         print('res')
         if sw[0]:
             return motion_state1(t,y,yp)
@@ -199,7 +199,7 @@ class Woodpecker(Implicit_Problem):
         
         return r
 
-def res(self,t,y,yp,sw):
+def res3(self,t,y,yp,sw):
     print('res2')
     if sw[0]:
         return motion_state1(t,y,yp)
