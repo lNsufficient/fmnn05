@@ -46,7 +46,6 @@ def res(t,y,yp,sw):
 
 def state_events(t, y, yp, sw):
     
-    #print('In state_event ', sw) 
     phi_b=y[2]
     phi_s=y[1]
     lambda_1=y[6]
@@ -64,7 +63,6 @@ def state_events(t, y, yp, sw):
         e_2 = h_b*phi_b-(l_s+l_g-l_b-r_0)
     
     
-    #print('state_event returns: ', numpy.array([e_1, e_2]))
     return numpy.array([e_1, e_2])
 
 def moi(solver):
@@ -80,26 +78,23 @@ def moi(solver):
     y[3] = 0
     y[4] = 0
     solver.y = y
-    solver.yd = yp #Det finns viss risk att detta inte räcker för att ändra på yp. Tänk på det.
+    solver.yd = yp 
 
 
 def handle_event(solver, event_info):
-    #print('In handle_event')
-    #print(event_info) #vi misstänker att detta är vad som returneras från state_event
-    #print(solver)
     
     phip_b=solver.yd[2]
 
     state_info = event_info[0]
   
     if solver.sw[0]:
-        if (phip_b < 0 and state_info[0]): #Kanske är det phip_s man ska kolla på i stället?...
+        if (phip_b < 0 and state_info[0]):
             print('phip_b before moi', phip_b)
             moi(solver)
             print('phip_b after moi', solver.yd[2])
             solver.sw=[0,1,0,0]
             print('state 2')
-        elif (phip_b > 0 and state_info[1]): #...här också.
+        elif (phip_b > 0 and state_info[1]): 
             print('phip_b before moi', solver.yd[2])
             moi(solver)
             print('phip_b after moi', solver.yd[2])
@@ -128,8 +123,6 @@ def handle_event(solver, event_info):
 
 
 def motion_state1(t,y, yp):
-    #print('In state 1 res')
-    #self.state_event(t,y,yp,sw)
     lambda_1, lambda_2  = y[6], y[7]
     
     r = default_residual(y, yp)
@@ -141,7 +134,6 @@ def motion_state1(t,y, yp):
     
     return r
 def motion_state2(t,y, yp):
-    #print('In state 2 res')
     zp, phi_s, phip_s = yp[0], y[1], yp[1]
     lambda_1, lambda_2  = y[6], y[7]
 
@@ -151,12 +143,13 @@ def motion_state2(t,y, yp):
     r[1] = r[1] + h_s*lambda_1+r_s*lambda_2
     r[2] = r[2]
     r[3] = ( r_s -  r_0) +  h_s*phi_s
+    #r[3] = yp[4]
     r[4] = zp +  r_s*phip_s
+    #r[4] = yp[3]+r_s*yp[4]
 
     return r
 
 def motion_state3(t,y,yp):
-    #print('In state 3 res')
 
     zp, phi_s, phip_s = yp[0], y[1], yp[1]
     lambda_1, lambda_2  = y[6], y[7]
@@ -167,9 +160,11 @@ def motion_state3(t,y,yp):
     r[2] = r[2]
     #r[3] = 0
     r[3] = ( r_s -  r_0) -  h_s*phi_s
+    #r[3] = yp[4]
     r[4] = zp +  r_s*phip_s
+    #r[4] = yp[3]+r_s*yp[4]
+
     #r[6] = 0
-    #print(numpy.linalg.norm(r))
     return r
 
 def default_residual(y, yp):
@@ -197,22 +192,17 @@ else:
 t0 = 0;
 startsw = [1,0,0,0]
 y0 = numpy.array([0.5, 0,0, -0, 0, 0.5,-1e-4,0])
-yd0 =  numpy.array([-0, 0, 0.5,-9.82, 1e-12, 0, 0, 0])
+yd0 =  numpy.array([-0, 0, 0.5,-g, 1e-12, 0, 0, 0])
 
-y0 = numpy.array([0.5, 0,0, -0, 0, 0.8,-1e-4,0])
-yd0 =  numpy.array([-0, 0, 0.8,-9.82, 1e-12, 0, 0, 0])
+w0 = -0.91
+y0 = numpy.array([0.5, 0,0, -0, w0, w0,-1e-4,0])
+yd0 =  numpy.array([-0, w0, w0,-g, 1e-12, 0, 0, 0])
 
 #y0 = numpy.array([4.83617428e-01, -3.00000000e-02, -2.16050178e-01, 1.67315232e-16, -5.39725367e-14, -1.31300925e+01, -7.20313572e-02, -6.20545138e-02])
 #yd0 = numpy.array([1.55140566e-17, -5.00453439e-15, -1.31302838e+01, 6.62087352e-13, -2.13577297e-10, 2.21484026e+02, -4.67637454e+00, -2.89824658e+00])
 #startsw = [0,1, 0, 0]
 
 problem = Implicit_Problem(res, y0, yd0, t0, sw0=startsw)
-#problem.default_residual = default_residual
-#problem.motion_state1 = motion_state1
-#problem.motion_state2 = motion_state2
-#problem.motion_state3 = motion_state3
-#problem.moi = moi
-#problem.res=res
 
 problem.state_events = state_events
 problem.handle_event = handle_event
@@ -223,25 +213,23 @@ lambdaIndex = [6, 7]
 sim = IDA(problem)
 sim.rtol = 1e-6
 
-sim.atol[phipIndex] = 1e-2
+sim.atol[phipIndex] = 1e8
 sim.algvar[phipIndex] = 1
-sim.atol[lambdaIndex] = 1e-2
-sim.algvar[lambdaIndex] = 0 
+sim.atol[lambdaIndex] = 1e8
+sim.algvar[lambdaIndex] = 1 
 
 sim.suppress_alg = True
-
-
-
-
-
-
 ncp = 500
+
 tfinal = 2
 t, y, yd = sim.simulate(tfinal, ncp)
-y = y[:,[0, 1, 2 ]]
+y = y[:,[ 0,  ]]
 plt.plot(t, y)
-plt.legend(["z", "phi_s", "phi_b", "zp", "phip_s", "phip_b", "lambda_1", "lambda_2"], loc = 'lower left')
+plt.legend(["z", "phi_s", "phi_b", "zp", "phip_s", "phip_b", "lambda_2", "lambda_2"], loc = 'lower left')
 print("Number of pecks", hack)
+plt.ylabel('Höjd (m)')
+
+plt.xlabel('Tid (s)')
 plt.show()
 print(y[-1, :])
 print(yd[-1, :])
