@@ -59,7 +59,6 @@ def squeezer1 (t, y):
     yp = zeros(14)
     yp[0:7] = y[7:14]
 
-    
     Minv = sl.inv(m)
     
 
@@ -76,6 +75,7 @@ def squeezer1 (t, y):
     #yp[14:20] = zeros(6)
     #print("yp:===== ",yp)
     return yp
+
 
 def defaultSqueezer(t, y):
     """
@@ -308,56 +308,57 @@ lambdaIndex = list(range(14,20))
 
 algvar = numpy.ones(numpy.size(y0))
 
-indexNumber = 2 
+indexNumber = 1 
 #1 - expl runge - index1 solution
 #2 - index2
 #3 - index3
+
 if indexNumber == 3:
     problem = Implicit_Problem(squeezer3, y0, yd0, t0)
     algvar[lambdaIndex] = 0
     algvar[velocityIndex] = 0
+    sim = IDA(problem)
+    sim.atol = numpy.ones(numpy.size(y0))*1e-7
+    sim.atol[lambdaIndex] = 1e-1
+    sim.atol[velocityIndex] = 1e-5
 elif indexNumber == 2:
     problem = Implicit_Problem(squeezer2, y0, yd0, t0)
     algvar[lambdaIndex] = 0
     algvar[velocityIndex] = 1
-elif indexNumber == 1:
-    problem = Explicit_Problem(squeezer1, y0[0:14], t0)
-    
-problem.name = 'Skueszer'
-
-if indexNumber == 2 or indexNumber == 3:
     sim = IDA(problem)
     sim.atol = numpy.ones(numpy.size(y0))*1e-7
     sim.atol[lambdaIndex] = 1e-5
     sim.atol[velocityIndex] = 1e-5
-
 elif indexNumber == 1:
+    problem = Explicit_Problem(squeezer1, y0[0:14], t0)
     sim = RungeKutta34(problem)
     sim.atol = numpy.ones(14)*1e-7
-    #sim.atol[velocityIndex] = 1e-5
 
-#print('atol',sim.atol)
+problem.name = 'Squeezer'
 
 sim.rtol = 1e-8 
 
 tfinal = 0.03
 ncp = 5000
 
-sim.algvar = algvar
-sim.suppress_alg = True
 if indexNumber == 2 or indexNumber == 3:
+    sim.algvar = algvar
+    sim.suppress_alg = True
     t, y, yd = sim.simulate(tfinal, ncp)
 elif indexNumber == 1:
-    t, y, = sim.simulate(0.03, 1000)
+    t, y, = sim.simulate(tfinal, ncp)
 
 
 
 print(numpy.shape(y))
 #sim.plot()
 pltVector = (y[:,:7]+1*numpy.pi)%(2*numpy.pi)-1*numpy.pi
-print("FINAL Y: ", y)
 #pltVector = y[:,lambdaIndex]
 
-pltVector = (y[:,:7])
-plt.plot(t, pltVector, '-')
+#pltVector = (y[:,:7])
+beta_plt = plt.plot(t, pltVector,'.' ) 
+plt.ylabel('Vinkel (rad)')
+plt.xlabel('Tid (s)')
+plt.legend(["beta", "theta", "gamma", "phi", "delta", "omega", "epsilon"], loc = 'lower left')
+#plt.label('beta', 'gamma', 'phi', 'delta', 'omega', 'epsilon')
 plt.show()
