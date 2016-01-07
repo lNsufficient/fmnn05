@@ -1,19 +1,21 @@
 within ;
 model Woodpecker
   Real z(start=5);
-  Real phi_s(start=0.0);
-  Real phi_b(start=0.0);
+  Real phi_s(start=0);
+  Real phi_b(start=0);
   Real lambda1(start=0);
   Real lambda2(start=0);
   Real z_prime(start=0);
-  Real phi_s_prime(start=0.0);
+  Real phi_s_prime(start=1);
   Real phi_b_prime(start=1.0);
   Real z_bis;
   Real phi_s_bis;
   Real phi_b_bis;
   Integer state(start=1);
+  Integer hits(start=0);
   //Real lambda1prev(start=0);
   Real I;
+
   constant Real m_s=3e-4;
   constant Real J_s=5e-9;
   constant Real m_b=4.5e-3;
@@ -57,9 +59,9 @@ equation
     0 = phi_s_bis;
     //0 = z_prime+r_s*phi_s_prime;
     0 = z_bis+r_s*phi_s_bis;
-    when phi_b_prime > 0 and h_b*phi_b >= l_s + l_g - l_b - r_0 then
-    reinit(phi_b_prime,-pre(phi_b_prime));
-     end when;
+    //when phi_b_prime > 0 and h_b*phi_b >= l_s + l_g - l_b - r_0 then
+    //reinit(phi_b_prime,-pre(phi_b_prime));
+     //end when;
   else
     (m_s+m_b)*z_bis+m_b*l_s*phi_s_bis+m_b*l_g*phi_b_bis = -(m_s+m_b)*g-lambda2;
     (m_b*l_s)*z_bis+(J_s+m_b*l_s*l_s)*phi_s_bis+(m_b*l_s*l_g)*phi_b_bis = c_p*(phi_b-phi_s)-m_b*l_s*g+h_s*lambda1-r_s*lambda2;
@@ -76,6 +78,7 @@ algorithm
     reinit(z_prime, 0);
     reinit(phi_s_prime,0);
     reinit(phi_b_prime,I/(J_b+m_b*l_g*l_g));
+    reinit(lambda1, -1e-12);
     state :=2;
   end when;
   when state == 1 and phi_b_prime > 0 and h_s*phi_s >= (r_s-r_0) then
@@ -84,18 +87,21 @@ algorithm
     reinit(phi_s_prime,0);
     reinit(phi_b_prime,I/(J_b+m_b*l_g*l_g));
     state :=3;
+    hits := hits + 1;
+    //inte omöjligt att det skulle kunna fungera att räkna hits här
   end when;
-  when state == 2 and lambda1 > 0.000001 then
+  when state == 2 and lambda1 >= 0 then
     state :=1;
   end when;
-  when state == 3 and phi_b_prime < 0 and lambda1 < 0 then
+  when state == 3 and phi_b_prime < 0 and lambda1 >= 0 then
     state :=1;
   end when;
   when state == 3 and phi_b_prime > 0 and h_b*phi_b >= l_s + l_g - l_b - r_0 then
+    hits := hits + 1;
     state :=4;
   end when;
   when state == 4 then
-    reinit(phi_s_prime,-pre(phi_s_prime));
+    reinit(phi_b_prime,-pre(phi_b_prime));
     state :=3;
   end when;
 
